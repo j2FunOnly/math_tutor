@@ -1,0 +1,68 @@
+.container {
+  margin: 1em auto;
+  width: 460px;
+  height: 350px;
+  position: relative;
+  border: 1px solid #ccc;
+}
+
+#svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+#axis {
+  position: absolute;
+  left: 15px;
+  top: 300px;
+}
+
+.input {
+  position: absolute;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  width: 16px;
+  text-align: center;
+}
+
+.input.title {
+  font-size: 24px;
+  width: 36px;
+}
+
+.input.error {
+  border-color: red;
+  color: red;
+}
+
+h3.title {
+  position: absolute;
+  text-align: center;
+  width: 100%;
+  font-size: 24px;
+}
+
+h3.title.solved {
+  color: green;
+}
+
+h3.title span {
+  display: inline-block;
+  padding: 0 5px;
+  border-radius: 3px;
+}
+
+h3.title span.error {
+  background-color: orange;
+}
+
+.hidden {
+  display: none;
+}
+
+.actions {
+  width: 460px;
+  margin: 1em auto;
+  text-align: center;
+}
