@@ -127,10 +127,10 @@ app.Task = function(a, b) {
 
 app.Task.prototype.isValid = function() {
   return (this.a >= 6 && this.a <= 9) &&
-    (this.a + this.b >= 11 && this.a + this.b <= 14);
+    (this.result() >= 11 && this.result() <= 14);
 }
 
-app.Task.prototype.sum = function() {
+app.Task.prototype.result = function() {
   return this.a + this.b;
 }
 
@@ -160,13 +160,13 @@ app.Task.prototype.check = function(k, task) {
   return result;
 }
 
-app.Task.equal = function(task) {
+app.Task.prototype.equal = function(task) {
   return this.a == task.a && this.b == task.b;
 }
 
 app.View = function(params) {
   this.svg = params.svg;
-  this.container = params.container;
+  this.container = document.querySelector(params.container);
   this.elements = {};
   this.elements.title = this.container.querySelector('h3.title');
 
@@ -174,14 +174,15 @@ app.View = function(params) {
   input.type = 'text';
   input.className = 'input hidden';
   input.value = '';
+  this.container.appendChild(input);
+  this.elements.input = input;
+
   input.addEventListener('input', function() {
     if (!this.ctrl.isValidNumber(input.value, this.step)) {
       input.classList.add('error');
       this.elements.title.innerHTML = this.ctrl.task.toHTML() + '?';
     }
   }.bind(this));
-  this.container.appendChild(input);
-  this.elements.input = input;
 }
 
 app.View.prototype.render = function(ctrl, step) {
@@ -192,67 +193,80 @@ app.View.prototype.render = function(ctrl, step) {
 
 app.View.prototype.firstStep = function() {
   var task = this.ctrl.task;
+  var input = this.elements.input;
+
+  input.className = 'input';
+  input.focus();
+
   this.svg.clear();
 
-  this.elements.title.className = 'title';
-  this.elements.title.innerHTML = task.toHTML() + '?';
+  var title = this.elements.title;
+  title.className = 'title';
+  title.innerHTML = task.toHTML() + '?';
 
-  this.elements.arc1 = this.svg.drawQ(0, task.a);
-  this.moveInputTo(this.elements.arc1);
-
-  this.elements.input.className = 'input';
-  this.elements.input.value = '';
-
-  this.elements.input.focus();
+  var arc = this.elements.arc1 = this.svg.drawQ(0, task.a);
+  this.moveInputTo(arc);
 }
 
 app.View.prototype.secondStep = function() {
   var task = this.ctrl.task;
   var input = this.elements.input;
+
   this.elements.title.innerHTML = task.toHTML() + '?';
 
-  this.setTitle(input.value, this.elements.arc1);
+  this.setArcTitle(this.elements.arc1);
 
-  this.elements.arc2 = this.svg.drawQ(task.a, task.sum());
-
-  this.moveInputTo(this.elements.arc2);
-  input.value = '';
+  var arc = this.elements.arc2 = this.svg.drawQ(task.a, task.result());
+  this.moveInputTo(arc);
 }
 
 app.View.prototype.thirdStep = function() {
   var task = this.ctrl.task;
   var input = this.elements.input;
+
   this.elements.title.innerHTML = task.toHTML() + '?';
 
-  this.setTitle(input.value, this.elements.arc2);
+  this.setArcTitle(this.elements.arc2);
+  this.moveInputToTitle();
+}
+
+app.View.prototype.solved = function() {
+  this.elements.input.classList.add('hidden');
+
+  var task = this.ctrl.task;
+  var title = this.elements.title;
+  title.innerHTML = task.toHTML() + task.result();
+  title.classList.add('solved');
+}
+
+app.View.prototype.setArcTitle = function(arc) {
+  var midPoint = this.svg.getMiddlePoint(arc);
+  var input = this.elements.input;
+
+  this.svg.text(input.value, {
+    x: midPoint.x,
+    y: midPoint.y - 5
+  });
+}
+
+app.View.prototype.moveInputTo = function(arc) {
+  var input = this.elements.input;
+  var midPoint = this.svg.getMiddlePoint(arc);
+
+  input.value = '';
+  input.classList.remove('error');
+  input.style.left = midPoint.x - 8 + 'px';
+  input.style.top = midPoint.y - 23 + 'px';
+}
+
+app.View.prototype.moveInputToTitle = function () {
+  var input = this.elements.input;
 
   input.value = '';
   input.classList.remove('error');
   input.classList.add('title');
   input.style.left = '270px';
   input.style.top = 50 - 28 + 'px';
-}
-
-app.View.prototype.solved = function() {
-  this.elements.input.classList.add('hidden');
-  this.elements.title.innerHTML = this.ctrl.task.toHTML() + this.ctrl.task.sum();
-  this.elements.title.classList.add('solved');
-}
-
-app.View.prototype.moveInputTo = function(el) {
-  var input = this.elements.input;
-  var midPoint = this.svg.getMiddlePoint(el);
-  input.classList.remove('error');
-  input.style.left = midPoint.x - 8 + 'px';
-  input.style.top = midPoint.y - 23 + 'px';
-}
-
-app.View.prototype.setTitle = function(text, el) {
-  var midPoint = this.svg.getMiddlePoint(el);
-  this.svg.text(text, {
-    x: midPoint.x,
-    y: midPoint.y - 5
-  });
 }
 
 app.Tutor = function(params) {
@@ -271,6 +285,7 @@ app.Tutor.prototype.start = function() {
 
 app.Tutor.prototype.isValidNumber = function(number, step) {
   var result;
+
   switch (step) {
     case 'firstStep':
       this.solution.a = parseInt(number, 10);
@@ -284,7 +299,7 @@ app.Tutor.prototype.isValidNumber = function(number, step) {
       break;
     case 'thirdStep':
       var answer = parseInt(number, 10);
-      result = this.task.sum() == answer;
+      result = this.task.equal(this.solution) && this.task.result() == answer;
       if (result) this.view.render(this, 'solved');
       break;
     default:
@@ -304,7 +319,7 @@ var view = new app.View({
     selector: '#svg',
     axis: axis
   }),
-  container: document.querySelector('.container')
+  container: '.container'
 });
 
 var tutor = new app.Tutor({
