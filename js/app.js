@@ -94,15 +94,39 @@ app.svg.SVG.prototype.drawQ = function(start, end) {
     stroke: 'red',
     'stroke-width': 1,
     'fill-opacity': 0,
-    'marker-end': 'url(#arrow)',
     d: new app.svg.Path()
       .M(qStart, this.axis.y)
       .Q(qCx, qCy, qEnd, this.axis.y)
       .toString()
   }
   this.setAttributes(q, qAttrs);
-  this.svgMain.appendChild(q);
+
+  if(this.animated) {
+    q.style.transition = 'stroke-dashoffset ' + this.animated / 1000 + 's linear';
+
+    var l = q.getTotalLength();
+    q.setAttribute('stroke-dasharray', l);
+    q.setAttribute('stroke-dashoffset', l);
+    this.svgMain.appendChild(q);
+
+    q.getBoundingClientRect();
+    q.setAttribute('stroke-dashoffset', 0);
+    setTimeout(function () {
+      q.setAttribute('marker-end', 'url(#arrow)');
+    }, this.animated);
+
+    this.animated = undefined;
+  } else {
+    q.setAttribute('marker-end', 'url(#arrow)');
+    this.svgMain.appendChild(q);
+  }
+
   return q;
+}
+
+app.svg.SVG.prototype.anim = function (duration) {
+  this.animated = duration;
+  return this;
 }
 
 app.svg.SVG.prototype.text = function(str, params) {
@@ -204,7 +228,7 @@ app.View.prototype.firstStep = function() {
   title.className = 'title';
   title.innerHTML = task.toHTML() + '?';
 
-  var arc = this.elements.arc1 = this.svg.drawQ(0, task.a);
+  var arc = this.elements.arc1 = this.svg.anim(200).drawQ(0, task.a);
   this.moveInputTo(arc);
 }
 
@@ -216,7 +240,7 @@ app.View.prototype.secondStep = function() {
 
   this.setArcTitle(this.elements.arc1);
 
-  var arc = this.elements.arc2 = this.svg.drawQ(task.a, task.result());
+  var arc = this.elements.arc2 = this.svg.anim(200).drawQ(task.a, task.result());
   this.moveInputTo(arc);
 }
 
